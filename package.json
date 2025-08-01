@@ -1,0 +1,22 @@
+{
+  "name": "sync-node",
+  "version": "1.0.0",
+  "description": "Sync data between Trello and Notion",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "get-token": "node get-trello-token.js",
+    "find-boards": "node find-boards.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.15",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "license": "MIT"
+}
