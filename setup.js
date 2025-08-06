@@ -87,7 +87,11 @@ async function main() {
   if (trelloOk && notionOk) {
     console.log('\n🎉 All systems ready! You can now run:');
     console.log('   npm start           # Run sync once');
+    console.log('   npm run sync:continuous  # Run continuous sync');
     console.log('   npm run dev         # Run with auto-restart');
+    console.log('\n🚀 For production deployment:');
+    console.log('   npm run start:production  # Production continuous sync');
+    console.log('   See DEPLOYMENT.md for Railway setup instructions');
   } else {
     console.log('\n⚠️  Please fix the connection issues above before running the sync.');
   }

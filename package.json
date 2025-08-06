@@ -1,14 +1,25 @@
 {
   "name": "sync-node",
   "version": "1.0.0",
-  "description": "Sync data between Trello and Notion",
+  "description": "Sync data between Trello and Notion using polling strategy",
   "main": "src/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "start": "node src/index.js",
+    "start:production": "node start-sync.js",
+    "sync": "node src/index.js",
+    "sync:continuous": "node start-sync.js",
+    "sync:once": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "get-token": "node get-trello-token.js",
-    "find-boards": "node find-boards.js"
+    "dev:continuous": "nodemon start-sync.js",
+    "setup": "node setup.js",
+    "find-boards": "node find-boards.js",
+    "health-check": "node --version && npm --version",
+    "test": "node setup.js"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",

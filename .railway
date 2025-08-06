@@ -1,0 +1,24 @@
+# SyncNode Production Configuration
+
+This file contains production-specific settings for Railway deployment.
+
+## Environment Variables Required
+- All variables from .env.example must be set in Railway dashboard
+- POLL_INTERVAL should be set to 120000 (2 minutes) for production
+- NODE_ENV should be set to "production"
+- LOG_LEVEL should be set to "info" 
+
+## Railway Configuration
+- Uses railway.json for deployment settings
+- Automatically restarts on failure (max 3 retries)
+- Uses npm run start:production as entry point
+
+## Monitoring
+- Logs are available in Railway dashboard
+- Service runs continuously with polling strategy
+- Memory usage should be monitored
+
+## Cost Optimization
+- Polling interval set to 2 minutes balances responsiveness with API usage
+- Log level set to "info" reduces log volume
+- Service automatically scales based on usage

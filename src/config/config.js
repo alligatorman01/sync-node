@@ -16,6 +16,13 @@ export const config = {
     apiKey: process.env.NOTION_API_KEY,
     databaseId: process.env.NOTION_DATABASE_ID
   },
+  sync: {
+    pollInterval: parseInt(process.env.POLL_INTERVAL) || 60000, // Default 60 seconds
+    // Production settings
+    minPollInterval: 30000, // Minimum 30 seconds to avoid API rate limits
+    maxPollInterval: 600000, // Maximum 10 minutes
+    retryDelay: 5000 // Delay before retrying failed operations
+  },
   logging: {
     level: process.env.LOG_LEVEL || 'info'
   }
@@ -38,5 +45,15 @@ export function validateConfig() {
   
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  // Validate polling interval is within acceptable range
+  const pollInterval = config.sync.pollInterval;
+  if (pollInterval < config.sync.minPollInterval) {
+    throw new Error(`POLL_INTERVAL must be at least ${config.sync.minPollInterval}ms (${config.sync.minPollInterval/1000} seconds)`);
+  }
+  
+  if (pollInterval > config.sync.maxPollInterval) {
+    throw new Error(`POLL_INTERVAL must not exceed ${config.sync.maxPollInterval}ms (${config.sync.maxPollInterval/60000} minutes)`);
   }
 }
