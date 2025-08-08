@@ -29,11 +29,11 @@ NOTION_DATABASE_ID=your_notion_database_id_here
 # Optional Production Settings
 NODE_ENV=production
 LOG_LEVEL=info
-POLL_INTERVAL=120000
+POLL_INTERVAL=900000
 ```
 
 ### 4. Production Settings
-- **POLL_INTERVAL**: Set to 120000 (2 minutes) for production to balance responsiveness with API rate limits
+- **POLL_INTERVAL**: Set to 900000 (15 minutes) for production to balance responsiveness with API rate limits. Minimum: 30000 (30 seconds), Maximum: 900000 (15 minutes)
 - **LOG_LEVEL**: Use 'info' for production (reduces log volume)
 - **NODE_ENV**: Set to 'production' for optimized performance
 

@@ -20,7 +20,7 @@ export const config = {
     pollInterval: parseInt(process.env.POLL_INTERVAL) || 60000, // Default 60 seconds
     // Production settings
     minPollInterval: 30000, // Minimum 30 seconds to avoid API rate limits
-    maxPollInterval: 600000, // Maximum 10 minutes
+    maxPollInterval: 900000, // Maximum 15 minutes
     retryDelay: 5000 // Delay before retrying failed operations
   },
   logging: {
