@@ -4,7 +4,7 @@ This file contains production-specific settings for Railway deployment.
 
 ## Environment Variables Required
 - All variables from .env.example must be set in Railway dashboard
-- POLL_INTERVAL should be set to 120000 (2 minutes) for production
+- POLL_INTERVAL should be set to 900000 (15 minutes) for production
 - NODE_ENV should be set to "production"
 - LOG_LEVEL should be set to "info" 
 
@@ -19,6 +19,6 @@ This file contains production-specific settings for Railway deployment.
 - Memory usage should be monitored
 
 ## Cost Optimization
-- Polling interval set to 2 minutes balances responsiveness with API usage
+- Polling interval set to 15 minutes balances responsiveness with API usage
 - Log level set to "info" reduces log volume
 - Service automatically scales based on usage

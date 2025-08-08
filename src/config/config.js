@@ -49,6 +49,15 @@ export function validateConfig() {
 
   // Validate polling interval is within acceptable range
   const pollInterval = config.sync.pollInterval;
+  
+  // Debug logging for troubleshooting
+  console.log('POLL_INTERVAL Debug Info:');
+  console.log('  Raw env var:', process.env.POLL_INTERVAL);
+  console.log('  Parsed value:', pollInterval);
+  console.log('  Type:', typeof pollInterval);
+  console.log('  Min allowed:', config.sync.minPollInterval);
+  console.log('  Max allowed:', config.sync.maxPollInterval);
+  
   if (pollInterval < config.sync.minPollInterval) {
     throw new Error(`POLL_INTERVAL must be at least ${config.sync.minPollInterval}ms (${config.sync.minPollInterval/1000} seconds)`);
   }
