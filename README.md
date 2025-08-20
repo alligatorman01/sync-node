@@ -8,9 +8,15 @@ A Node.js script that syncs properties between Trello cards and Notion database 
   - Trello card Title ⟷ Notion Title
   - Trello custom fields (Reach, Confidence, Effort, Impact) ⟷ Notion number properties
   - Trello list name ⟷ Notion select property "Department"
+  - Trello "synced" checkbox ⟷ Notion "synced" checkbox (auto-set to true after sync)
 
 - **One-Way Sync** (Notion → Trello):
   - Notion formula property "Total Score" → Trello custom field "Total Score"
+  - Notion page URL → Trello custom field "Notion Link"
+
+- **Deletion Sync**:
+  - Items marked with "synced" = true on one platform but missing on the other will be deleted
+  - Ensures data consistency by removing orphaned entries
 
 ## Setup
 

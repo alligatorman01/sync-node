@@ -210,6 +210,17 @@ class NotionService {
   }
 
   /**
+   * Generates the public URL for a Notion page
+   * @param {string} pageId - Notion page ID
+   * @returns {string} Public Notion page URL
+   */
+  generateNotionPageUrl(pageId) {
+    // Remove dashes from page ID for URL
+    const cleanPageId = pageId.replace(/-/g, '');
+    return `https://www.notion.so/${cleanPageId}`;
+  }
+
+  /**
    * Finds entries that need Trello ID assignment (newly created in Notion)
    * @returns {Promise<Array>} Entries without Trello ID
    */
@@ -230,6 +241,36 @@ class NotionService {
       logger.error('Error finding entries without Trello ID', error);
       throw error;
     }
+  }
+
+  /**
+   * Deletes a Notion page
+   * @param {string} pageId - Page ID to delete
+   * @returns {Promise<Object>} Delete result
+   */
+  async deletePage(pageId) {
+    try {
+      logger.info(`Deleting Notion page ${pageId}`);
+      const response = await this.client.pages.update({
+        page_id: pageId,
+        archived: true
+      });
+      
+      logger.info(`Deleted Notion page ${pageId}`);
+      return response;
+    } catch (error) {
+      logger.error(`Error deleting Notion page ${pageId}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Extracts the value from a Notion checkbox property
+   * @param {Object} checkboxProperty - Notion checkbox property
+   * @returns {boolean} Checkbox value
+   */
+  extractCheckboxValue(checkboxProperty) {
+    return checkboxProperty?.checkbox || false;
   }
 }
 

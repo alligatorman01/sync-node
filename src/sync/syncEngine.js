@@ -51,6 +51,9 @@ class SyncEngine {
       // Sync Notion → Trello (including Total Score sync)
       await this.syncNotionToTrello(notionEntries, listNameToIdMap, customFieldMap);
 
+      // Handle deletion sync based on "synced" checkbox
+      await this.handleDeletionSync(trelloCards, notionEntries, customFieldMap);
+
       // Note: syncTotalScoreToTrello is now called within syncNotionToTrello to avoid duplicate API calls
 
       logger.info('Sync completed successfully', this.syncStats);
@@ -263,6 +266,20 @@ class SyncEngine {
       }
     });
 
+    // Set initial Notion Link in the new Trello card if the field exists
+    const customFields = await this.trelloService.getCustomFields();
+    const customFieldMap = this.createCustomFieldMap(customFields);
+    
+    if (customFieldMap['Notion Link']) {
+      const notionPageUrl = this.notionService.generateNotionPageUrl(notionEntry.id);
+      await this.trelloService.updateTextCustomField(
+        newCard.id, 
+        customFieldMap['Notion Link'], 
+        notionPageUrl
+      );
+      logger.info(`Set Notion Link for new Trello card "${title}": ${notionPageUrl}`);
+    }
+
     logger.info(`Created new Trello card for Notion entry: ${title}`);
   }
 
@@ -295,7 +312,20 @@ class SyncEngine {
     for (const [fieldName, value] of Object.entries(customFields)) {
       const fieldId = customFieldMap[fieldName];
       if (fieldId && value !== null && value !== undefined) {
-        await this.trelloService.updateCustomField(trelloCard.id, fieldId, value);
+        // Handle different field types
+        if (fieldName === 'synced') {
+          // Handle checkbox field
+          await this.trelloService.updateCheckboxCustomField(trelloCard.id, fieldId, value);
+        } else if (typeof value === 'boolean') {
+          // Handle other checkbox fields
+          await this.trelloService.updateCheckboxCustomField(trelloCard.id, fieldId, value);
+        } else if (typeof value === 'string') {
+          // Handle text fields
+          await this.trelloService.updateTextCustomField(trelloCard.id, fieldId, value);
+        } else {
+          // Handle number fields
+          await this.trelloService.updateCustomField(trelloCard.id, fieldId, value);
+        }
         hasUpdates = true;
       }
     }
@@ -309,6 +339,25 @@ class SyncEngine {
         totalScore
       );
       hasUpdates = true;
+    }
+
+    // One-way sync: Notion Link from Notion to Trello
+    if (customFieldMap['Notion Link']) {
+      const notionPageUrl = this.notionService.generateNotionPageUrl(notionEntry.id);
+      
+      // Get current Notion Link value from Trello
+      const currentNotionLink = this.getTrelloTextCustomFieldValue(trelloCard, customFieldMap['Notion Link']);
+      
+      // Only update if values are different
+      if (hasChanged(currentNotionLink, notionPageUrl)) {
+        await this.trelloService.updateTextCustomField(
+          trelloCard.id, 
+          customFieldMap['Notion Link'], 
+          notionPageUrl
+        );
+        hasUpdates = true;
+        logger.info(`Updated Notion Link for Trello card "${trelloCard.name}": ${notionPageUrl}`);
+      }
     }
 
     if (hasUpdates) {
@@ -485,6 +534,101 @@ class SyncEngine {
 
     const fieldItem = trelloCard.customFieldItems.find(item => item.idCustomField === customFieldId);
     return fieldItem?.value?.number || null;
+  }
+
+  /**
+   * Gets a text custom field value from a Trello card
+   * @param {Object} trelloCard - Trello card with customFieldItems
+   * @param {string} customFieldId - Custom field ID to look for
+   * @returns {string|null} Custom field text value or null if not found
+   */
+  getTrelloTextCustomFieldValue(trelloCard, customFieldId) {
+    if (!trelloCard.customFieldItems) {
+      return null;
+    }
+
+    const fieldItem = trelloCard.customFieldItems.find(item => item.idCustomField === customFieldId);
+    return fieldItem?.value?.text || null;
+  }
+
+  /**
+   * Gets a checkbox custom field value from a Trello card
+   * @param {Object} trelloCard - Trello card with customFieldItems
+   * @param {string} customFieldId - Custom field ID to look for
+   * @returns {boolean|null} Custom field checkbox value or null if not found
+   */
+  getTrelloCheckboxCustomFieldValue(trelloCard, customFieldId) {
+    if (!trelloCard.customFieldItems) {
+      return null;
+    }
+
+    const fieldItem = trelloCard.customFieldItems.find(item => item.idCustomField === customFieldId);
+    return fieldItem?.value?.checked === 'true'; // Convert string to boolean
+  }
+
+  /**
+   * Handles deletion sync based on "synced" checkbox property
+   * @param {Array} trelloCards - Array of Trello cards
+   * @param {Array} notionEntries - Array of Notion entries
+   * @param {Object} customFieldMap - Map of custom field names to IDs
+   */
+  async handleDeletionSync(trelloCards, notionEntries, customFieldMap) {
+    logger.info('Checking for deletion sync based on "synced" checkbox...');
+
+    const syncedFieldId = customFieldMap['synced'];
+    if (!syncedFieldId) {
+      logger.warn('Synced checkbox field not found in Trello - skipping deletion sync');
+      return;
+    }
+
+    // Create lookup maps
+    const trelloCardMap = {};
+    trelloCards.forEach(card => {
+      trelloCardMap[card.id] = card;
+    });
+
+    const notionEntryMap = {};
+    notionEntries.forEach(entry => {
+      const trelloId = this.notionService.extractRichTextValue(entry.properties['Trello ID']);
+      if (trelloId) {
+        notionEntryMap[trelloId] = entry;
+      }
+    });
+
+    // Check for Notion entries marked for deletion (synced=true but Trello card doesn't exist)
+    for (const entry of notionEntries) {
+      try {
+        const isSynced = this.notionService.extractCheckboxValue(entry.properties.synced);
+        const trelloId = this.notionService.extractRichTextValue(entry.properties['Trello ID']);
+
+        if (isSynced && trelloId && !trelloCardMap[trelloId]) {
+          logger.info(`Deleting Notion entry (synced=true but Trello card ${trelloId} not found): ${this.notionService.extractTitleValue(entry.properties['Priority Name'])}`);
+          await this.notionService.deletePage(entry.id);
+          this.syncStats.notionToTrello.updated++; // Count as update for stats
+        }
+      } catch (error) {
+        logger.error(`Error checking Notion entry ${entry.id} for deletion`, error);
+        this.syncStats.errors++;
+      }
+    }
+
+    // Check for Trello cards marked for deletion (synced=true but Notion entry doesn't exist)
+    for (const card of trelloCards) {
+      try {
+        const isSynced = this.getTrelloCheckboxCustomFieldValue(card, syncedFieldId);
+        
+        if (isSynced && !notionEntryMap[card.id]) {
+          logger.info(`Deleting Trello card (synced=true but Notion entry not found): ${card.name}`);
+          await this.trelloService.deleteCard(card.id);
+          this.syncStats.trelloToNotion.updated++; // Count as update for stats
+        }
+      } catch (error) {
+        logger.error(`Error checking Trello card ${card.id} for deletion`, error);
+        this.syncStats.errors++;
+      }
+    }
+
+    logger.info('Deletion sync check completed');
   }
 
   /**

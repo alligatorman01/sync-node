@@ -50,6 +50,9 @@ export function mapTrelloToNotion(trelloCard, customFields, listName) {
     properties.Impact = { number: Number(customFields.Impact) };
   }
 
+  // Map synced checkbox - always set to true after sync
+  properties.synced = { checkbox: true };
+
   return properties;
 }
 
@@ -81,6 +84,9 @@ export function mapNotionToTrello(notionEntry) {
     customFields.Impact = notionEntry.properties.Impact.number;
   }
 
+  // Map synced checkbox - always set to true after sync
+  customFields.synced = true;
+
   return { update, customFields };
 }
 
@@ -107,7 +113,17 @@ export function extractTrelloCustomFields(trelloCard, boardCustomFields) {
   trelloCard.customFieldItems.forEach(item => {
     const fieldName = fieldMap[item.idCustomField];
     if (fieldName) {
-      customFields[fieldName] = item.value?.number || 0;
+      // Handle different custom field types
+      if (item.value?.number !== undefined) {
+        customFields[fieldName] = item.value.number;
+      } else if (item.value?.text !== undefined) {
+        customFields[fieldName] = item.value.text;
+      } else if (item.value?.checked !== undefined) {
+        // Convert string to boolean for checkbox fields
+        customFields[fieldName] = item.value.checked === 'true';
+      } else {
+        customFields[fieldName] = 0; // Default for number fields
+      }
     }
   });
 

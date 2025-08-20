@@ -65,7 +65,6 @@ class TrelloService {
     const cards = await this.makeRequest(`/boards/${this.boardId}/cards`, {
       params: {
         customFieldItems: 'true',
-        list: 'true',
         filter: 'open' // Only get open (non-archived) cards
       }
     });
@@ -237,6 +236,44 @@ class TrelloService {
   }
 
   /**
+   * Updates a text custom field on a card
+   * @param {string} cardId - Card ID
+   * @param {string} customFieldId - Custom field ID
+   * @param {string} value - New text value
+   * @returns {Promise<Object>} Update result
+   */
+  async updateTextCustomField(cardId, customFieldId, value) {
+    logger.debug(`Updating text custom field ${customFieldId} on card ${cardId} to ${value}`);
+    return await this.makeRequest(`/cards/${cardId}/customField/${customFieldId}/item`, {
+      method: 'PUT',
+      data: {
+        value: {
+          text: String(value)
+        }
+      }
+    });
+  }
+
+  /**
+   * Updates a checkbox custom field on a card
+   * @param {string} cardId - Card ID
+   * @param {string} customFieldId - Custom field ID
+   * @param {boolean} checked - Checkbox state
+   * @returns {Promise<Object>} Update result
+   */
+  async updateCheckboxCustomField(cardId, customFieldId, checked) {
+    logger.debug(`Updating checkbox custom field ${customFieldId} on card ${cardId} to ${checked}`);
+    return await this.makeRequest(`/cards/${cardId}/customField/${customFieldId}/item`, {
+      method: 'PUT',
+      data: {
+        value: {
+          checked: String(checked) // Trello expects checkbox values as strings
+        }
+      }
+    });
+  }
+
+  /**
    * Updates a custom field value on a card
    * @param {string} cardId - Card ID
    * @param {string} customFieldId - Custom field ID
@@ -277,6 +314,18 @@ class TrelloService {
   async moveCard(cardId, listId) {
     logger.info(`Moving card ${cardId} to list ${listId}`);
     return await this.updateCard(cardId, { idList: listId });
+  }
+
+  /**
+   * Deletes a Trello card
+   * @param {string} cardId - Card ID to delete
+   * @returns {Promise<Object>} Delete result
+   */
+  async deleteCard(cardId) {
+    logger.info(`Deleting Trello card ${cardId}`);
+    return await this.makeRequest(`/cards/${cardId}`, {
+      method: 'DELETE'
+    });
   }
 
   /**
